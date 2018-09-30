@@ -30,7 +30,7 @@ public class ItemRoot : MonoBehaviour
     private float respawn_timer_plant = 0.0f;           // Plant 출현 시간
 
     // respawn 위치를 조정하는 method 들입니다.
-    public void respawnIron()
+    public void RespawnIron()
     {
         GameObject go = GameObject.Instantiate(this.IronPrefab) as GameObject;          // Iron Respawn 위치 생성
         Vector3 pos = GameObject.Find("IronRespawn").transform.position;                // 출현지점을 가져와서
@@ -39,7 +39,7 @@ public class ItemRoot : MonoBehaviour
         pos.z += Random.Range(-1.0f, 1.0f);                                             // 약간 랜덤하게 바꾼 다음에
         go.transform.position = pos;                                                    // 바뀐 위치를 알려줍니다.
     }
-    public void respawnApple()
+    public void RespawnApple()
     {
         GameObject go = GameObject.Instantiate(this.ApplePrefab) as GameObject;         // Apple Respawn 위치 생성
         Vector3 pos = GameObject.Find("AppleRespawn").transform.position;               // 출현지점을 가져와서
@@ -48,7 +48,7 @@ public class ItemRoot : MonoBehaviour
         pos.z += Random.Range(-1.0f, 1.0f);                                             // 약간 랜덤하게 바꾼 다음에
         go.transform.position = pos;                                                    // 바뀐 위치를 알려줍니다.
     }
-    public void respawnPlant()
+    public void RespawnPlant()
     {
         if (this.Respawn_points.Count > 0)                                               // 출현지점 List에 자리가 있다면?
         {
@@ -63,7 +63,7 @@ public class ItemRoot : MonoBehaviour
     }
 
     // 아이템의 종류를 Item.TYPE으로 반환하는 method 입니다.
-    public Item.TYPE getItemType(GameObject item_go)
+    public Item.TYPE GetItemType(GameObject item_go)
     {
         Item.TYPE type = Item.TYPE.NONE;
 
@@ -87,8 +87,10 @@ public class ItemRoot : MonoBehaviour
 
     void Start()
     {
-        // -----
+        // ----- 각 아이템의 출현 지점을 보이지 않게 합니다. -----
+        // ----- 현재 Respawn 지점에 Cilynder로 지정해 놓은 것을 안 보이게 합니다. -----
         // Plant의 Mesh Renderer를 보이지 않게 합니다.
+
         this.Respawn_points = new List<Vector3>();
         GameObject[] respawns = GameObject.FindGameObjectsWithTag("PlantRespawn"); // "PlantRespawn" 태그가 붙은 모든 오브젝트를 배열에 저장합니다.
         foreach (GameObject go in respawns)                                        // 배열 respawns 내의 각 GameObject를 순서대로 처리합니다.
@@ -108,9 +110,9 @@ public class ItemRoot : MonoBehaviour
         GameObject ironrespawn = GameObject.Find("IronRespawn");
         ironrespawn.GetComponent<MeshRenderer>().enabled = false;
 
-        // 시작과 함께 Apple, Iron 하나씩 생성.
-        this.respawnIron();
-        this.respawnPlant();
+        // 시작과 함께 Iron, Plant 하나씩 생성.
+        this.RespawnIron();
+        this.RespawnPlant();
 
     }
 
@@ -124,17 +126,17 @@ public class ItemRoot : MonoBehaviour
         if(respawn_timer_apple > RESPAWN_TIME_APPLE)
         {
             respawn_timer_apple = 0.0f;
-            this.respawnApple();
+            this.RespawnApple();
         }
         if (respawn_timer_iron > RESPAWN_TIME_IRON)
         {
             respawn_timer_iron = 0.0f;
-            this.respawnIron();
+            this.RespawnIron();
         }
         if (respawn_timer_plant > RESPAWN_TIME_PLANT)
         {
             respawn_timer_plant = 0.0f;
-            this.respawnPlant();
+            this.RespawnPlant();
         }
     }
 }

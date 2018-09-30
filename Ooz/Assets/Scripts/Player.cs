@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class Player : MonoBehaviour {
 
-    // ----------------------- 이동 관련 부분 ------------------------------
+    // ----------------------- 키 입력 관련 부분 ------------------------------
     public static float MOVE_AREA_RADIUS = 15.0f;   // 섬의 반지름
     public static float MOVE_SPEED = 5.0f;          // 이동 속도
 
@@ -16,6 +16,9 @@ public class Player : MonoBehaviour {
         public bool left;
         public bool pick;                           // 줍는다/버린다 Z키
         public bool action;                         // 먹는다/수리한다 X키
+        public bool skill_change_left;              // 스킬교체 A키
+        public bool skill;                          // 스킬사용 S키
+        public bool skill_change_right;             // 스킬교체 D키
     }
 
     private Key key;                                // 키 조작 보관 변수 선언
@@ -41,6 +44,9 @@ public class Player : MonoBehaviour {
         this.key.left = false;
         this.key.pick = false;
         this.key.action = false;
+        this.key.skill_change_left = false;
+        this.key.skill = false;
+        this.key.skill_change_right = false;
 
         // |= 연산은 A |= B; 라면 A = A|B; 의 역할을 합니다.
         // A, B 둘 다 false일 때만 false를 반환합니다.
@@ -65,36 +71,34 @@ public class Player : MonoBehaviour {
         this.key.pick |= Input.GetKeyDown(KeyCode.Z);
         // X키가 눌리면 true 대입 (먹는다/수리한다)
         this.key.action |= Input.GetKeyDown(KeyCode.X);
+        // S키가 눌리면 true 대입 (스킬사용), A,D로 스킬 교체
+        this.key.skill_change_left |= Input.GetKeyDown(KeyCode.A);
+        this.key.skill|= Input.GetKey(KeyCode.S);
+        this.key.skill_change_right |= Input.GetKeyDown(KeyCode.D);
 
     }
 
-    
     private void Move_Control()                     //실제로 Player 를 이동시키는 method 입니다.
     {
         Vector3 move_vector = Vector3.zero;         // 플레이어 이동용 Vector
         Vector3 position = this.transform.position; // 현재 위치를 보관하는 Vector
-        bool is_Moved = false;                      // 이동중인지 확인하는 flag
         
         // ↑,↓,→,←키가 눌리면
         if (this.key.up) 
         {
             move_vector += Vector3.forward;         // move_vector(이동용 Vector)를 위쪽으로 변경
-            is_Moved = true;                        // '이동 중' flag
         }
         if (this.key.down)
         {
             move_vector += Vector3.back;
-            is_Moved = true;
         }
         if (this.key.right)                         
         {
             move_vector += Vector3.right;
-            is_Moved = true;
         }
         if (this.key.left)
         {
             move_vector += Vector3.left;
-            is_Moved = true;
         }
 
         move_vector.Normalize();                    // Vector 길이를 1로 정규화
@@ -128,7 +132,7 @@ public class Player : MonoBehaviour {
     private ItemRoot item_root = null;              // ItemRoot 스크립트를 가져온다
     public GUIStyle guistyle;                       // Font 스타일
 
-    private void pick_or_drop_control()             // 물건을 줍거나 떨어뜨리기 위한 method 입니다.
+    private void Pick_Or_Drop_Control()             // 물건을 줍거나 떨어뜨리기 위한 method 입니다.
     {
         do
         {
@@ -159,7 +163,7 @@ public class Player : MonoBehaviour {
             }
         } while (false);
     }
-    private bool is_other_in_view(GameObject other) // 접촉한 물건이 자신의 정면에 있는지 판정하는 method 입니다.
+    private bool Is_Other_In_View(GameObject other) // 접촉한 물건이 자신의 정면에 있는지 판정하는 method 입니다.
     {
         bool ret = false;
         do
@@ -211,14 +215,14 @@ public class Player : MonoBehaviour {
         {
             if (this.closest_item == null)                  // 아무것도 주목하고 있지 않다면?
             {
-                if (this.is_other_in_view(other_go))        // 정면에 아이템이 있으면?
+                if (this.Is_Other_In_View(other_go))        // 정면에 아이템이 있으면?
                 {
                     this.closest_item = other_go;           // 주목한다.
                 }
             }
             else if (this.closest_item == other_go)         // 지금 뭔가 주목하고 있다면?
             {
-                if (!this.is_other_in_view(other_go))       // 정면에 아이템이 없으면?
+                if (!this.Is_Other_In_View(other_go))       // 정면에 아이템이 없으면?
                 {
                     this.closest_item = null;               // 주목을 그만둔다.
                 }
@@ -233,9 +237,50 @@ public class Player : MonoBehaviour {
         }
     }
 
+    // ----------------------- 스킬 사용 부분 ------------------------------
+    private GameObject carried_skill = null;
+    private SkillRoot skill_root = null;
+    private int Skill_Pointer = 0;
+
+    private void Skill_Use_Control()             // 물건을 줍거나 떨어뜨리기 위한 method 입니다.
+    {
+        switch (this.carried_skill.tag)
+        {
+            case "Owl":
+                this.skill_root.UseOwl();
+                break;
+            case "Alpaca":
+                this.skill_root.UseAlpaca();
+                break;
+            case "Turtle":
+                this.skill_root.UseTurtle();
+                break;
+        }
+    }
+    private void Skill_Change_Control()
+    {
+        if (this.key.skill_change_left)
+        {
+            this.Skill_Pointer--;
+            if (this.Skill_Pointer == -1)
+                this.Skill_Pointer = this.skill_root.Skill_list.Count - 1;
+        }
+        else
+        {
+            this.Skill_Pointer++;
+            if (this.Skill_Pointer == this.skill_root.Skill_list.Count)
+                this.Skill_Pointer = 0;
+        }
+
+        this.carried_skill = this.skill_root.Skill_list[Skill_Pointer];
+    }
+
+    // --------- 화면 UI ----------
     void OnGUI()
     {
+        // x 는 값을 더하면 오른쪽으로, 빼면 왼쪽으로
         float x = 20.0f;
+        // y 는 값을 더하면 아래로, 빼면 위로
         float y = Screen.height - 40.0f;
 
         if (this.carried_item != null)              // 들고 있는 Item이 있다면
@@ -245,7 +290,7 @@ public class Player : MonoBehaviour {
         }
         else
         {
-            if(this.closest_item != null)           // 들고있지 않은데 주목하고 있다면
+            if (this.closest_item != null)           // 들고있지 않은데 주목하고 있다면
             {
                 GUI.Label(new Rect(x, y, 200.0f, 20.0f), "Z : 줍는다", guistyle);
             }
@@ -257,8 +302,24 @@ public class Player : MonoBehaviour {
                 GUI.Label(new Rect(x, y, 200.0f, 20.0f), "암냠냠", guistyle);
                 break;
         }
+
+        GUI.Label(new Rect(x, y - 20.0f, 200.0f, 20.0f), "◀", guistyle);
+        GUI.Label(new Rect(x + 100.0f, y - 20.0f, 200.0f, 20.0f), "▶", guistyle);
+        switch (this.carried_skill.tag)
+        {
+            case "Owl":
+                GUI.Label(new Rect(x + 30.0f, y - 20.0f, 200.0f, 20.0f), "부엉이", guistyle);
+                break;
+            case "Alpaca":
+                GUI.Label(new Rect(x + 30.0f, y - 20.0f, 200.0f, 20.0f), "알파카", guistyle);
+                break;
+            case "Turtle":
+                GUI.Label(new Rect(x + 30.0f, y - 20.0f, 200.0f, 20.0f), "거북이", guistyle);
+                break;
+        }
     }
-    
+
+
     void Start () {
         // 이동, 수리, 식사 등 상태에 관한 초기화입니다
         this.step = STEP.NONE;                      // 현재 상태 초기화
@@ -267,6 +328,9 @@ public class Player : MonoBehaviour {
         // 수집 행동을 위해 ItemRoot 스크립트를 가져옵니다.
         this.item_root = GameObject.Find("GameRoot").GetComponent<ItemRoot>();
         this.guistyle.fontSize = 16;
+
+        this.skill_root = GameObject.Find("GameRoot").GetComponent<SkillRoot>();
+        this.carried_skill = skill_root.Skill_list[0];    // 스킬 설정
     }
 
     void Update () {
@@ -280,6 +344,7 @@ public class Player : MonoBehaviour {
             switch (this.step)                      // 현재 상태가...
             {
                 case STEP.MOVE:                     // 이동중일 때
+                    // 식사상태 판별
                     do
                     {
                         if (!this.key.action)       // 액션(X)키가 눌려 있지 않다 -> 루프 탈출
@@ -289,7 +354,7 @@ public class Player : MonoBehaviour {
 
                         if (this.carried_item != null)              // 액션(X)키가 눌려 있다면?
                         {
-                            Item.TYPE carried_item_type = this.item_root.getItemType(this.carried_item);
+                            Item.TYPE carried_item_type = this.item_root.GetItemType(this.carried_item);
 
                             switch (carried_item_type)              // 가지고 있는 아이템을 판별합니다.
                             {
@@ -333,10 +398,26 @@ public class Player : MonoBehaviour {
         {
             case STEP.MOVE:
                 this.Move_Control();                // 이동 조작
-                this.pick_or_drop_control();        // 수집 조작
+                this.Pick_Or_Drop_Control();        // 수집 조작
                 break;
         }
-        
+
+
+        // 스킬 조작
+        do
+        {
+            if (this.key.skill_change_left || this.key.skill_change_right)
+            {
+                Skill_Change_Control();
+                break;
+            }
+
+            if (this.key.skill)              // 스킬을 가지고 있다면?
+            {
+                Skill_Use_Control();
+            }
+        } while (false);
+
     }
     
 }

@@ -9,6 +9,10 @@ TagManager:
   - Plant
   - PlantRespawn
   - Rocket
+  - Owl
+  - Alpaca
+  - Turtle
+  - Skill_list
   layers:
   - Default
   - TransparentFX
