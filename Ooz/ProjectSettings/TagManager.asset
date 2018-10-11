@@ -13,6 +13,7 @@ TagManager:
   - Alpaca
   - Turtle
   - Skill_list
+  - Warp
   layers:
   - Default
   - TransparentFX
@@ -49,4 +50,10 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Background
+    uniqueID: 1440603795
+    locked: 0
+  - name: Player
+    uniqueID: 654283649
     locked: 0

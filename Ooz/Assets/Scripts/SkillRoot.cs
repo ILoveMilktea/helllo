@@ -20,6 +20,12 @@ public class SkillRoot : MonoBehaviour {
     public GameObject TurtlePrefab = null;
     public List<GameObject> Skill_list;
 
+    public GameObject Owl_Light = null;
+    public GameObject Owl_Light_Directional = null;
+    public GameObject Basic_Light = null;
+    private Player_Camera Camera_Control = null;
+    private Player Movespeed_Control = null;
+
     public float step_timer = 0.0f;
     public static float COOLDOWN_TIME_OWL = 5.0f;     // Owl 쿨타임 상수
     public static float COOLDOWN_TIME_ALPACA = 20.0f;      // Alpaca 쿨타임 상수
@@ -30,19 +36,16 @@ public class SkillRoot : MonoBehaviour {
 
     public void UseOwl()
     {
-        GameObject go = GameObject.Instantiate(this.OwlPrefab) as GameObject;          // OwlPos 가져오기 위한 객체 생성
-        Vector3 pos = GameObject.Find("OwlPos").transform.position;                // 현재 Owl 위치를 가져와서
-        // 스킬 사용시 기능 입력 요망
+        Owl_Light.GetComponent<Light>().enabled = true;
+        Owl_Light_Directional.GetComponent<Light>().enabled = true;
+        Basic_Light.GetComponent<Light>().enabled = false;
 
-        go.transform.position = pos;                                                    // 바뀐 위치를 알려줍니다.
+        Camera_Control.distance = 12.0f;
+        Camera_Control.height = 12.0f;
     }
     public void UseAlpaca()
     {
-        GameObject go = GameObject.Instantiate(this.AlpacaPrefab) as GameObject;          // AlpacaPos 가져오기 위한 객체 생성
-        Vector3 pos = GameObject.Find("AlpacaPos").transform.position;                // 현재 Alpaca 위치를 가져와서
-        // 스킬 사용시 기능 입력 요망
-
-        go.transform.position = pos;                                                    // 바뀐 위치를 알려줍니다.
+        Movespeed_Control.MOVE_SPEED = 10.0f;
     }
     public void UseTurtle()
     {
@@ -52,13 +55,33 @@ public class SkillRoot : MonoBehaviour {
 
         go.transform.position = pos;                                                    // 바뀐 위치를 알려줍니다.
     }
-    
+
+    public void resetOwl()
+    {
+        Owl_Light.GetComponent<Light>().enabled = false;
+        Owl_Light_Directional.GetComponent<Light>().enabled = false;
+        Basic_Light.GetComponent<Light>().enabled = true;
+
+        Camera_Control.distance = 7.0f;
+        Camera_Control.height = 7.0f;
+    }
+    public void resetAlpaca()
+    {
+        Movespeed_Control.MOVE_SPEED = 5.0f;
+    }
+    public void resetTurtle()
+    {
+    }
+
 
     void Start () {
         this.Skill_list = new List<GameObject>();
         this.Skill_list.Add(OwlPrefab);
         this.Skill_list.Add(AlpacaPrefab);
         this.Skill_list.Add(TurtlePrefab);
+
+        this.Camera_Control = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Player_Camera>();
+        this.Movespeed_Control = GameObject.FindGameObjectWithTag("Player").GetComponent<Player>();
     }
 
     void Update () {

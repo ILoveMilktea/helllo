@@ -1,12 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Spine.Unity;
 using UnityEngine;
 
-public class Player : MonoBehaviour {
+public class Player : MonoBehaviour
+{
 
     // ----------------------- 키 입력 관련 부분 ------------------------------
-    public static float MOVE_AREA_RADIUS = 15.0f;   // 섬의 반지름
-    public static float MOVE_SPEED = 5.0f;          // 이동 속도
+    public float MOVE_SPEED = 5.0f;          // 이동 속도
 
     private struct Key                              // 키 조작 정보
     {
@@ -17,7 +18,8 @@ public class Player : MonoBehaviour {
         public bool pick;                           // 줍는다/버린다 Z키
         public bool action;                         // 먹는다/수리한다 X키
         public bool skill_change_left;              // 스킬교체 A키
-        public bool skill;                          // 스킬사용 S키
+        public bool skill_ON;                       // 스킬사용 S키
+        public bool skill_OFF;                      // 스킬사용 S키 해제
         public bool skill_change_right;             // 스킬교체 D키
     }
 
@@ -45,7 +47,8 @@ public class Player : MonoBehaviour {
         this.key.pick = false;
         this.key.action = false;
         this.key.skill_change_left = false;
-        this.key.skill = false;
+        this.key.skill_ON = false;
+        this.key.skill_OFF = false;
         this.key.skill_change_right = false;
 
         // |= 연산은 A |= B; 라면 A = A|B; 의 역할을 합니다.
@@ -73,32 +76,86 @@ public class Player : MonoBehaviour {
         this.key.action |= Input.GetKeyDown(KeyCode.X);
         // S키가 눌리면 true 대입 (스킬사용), A,D로 스킬 교체
         this.key.skill_change_left |= Input.GetKeyDown(KeyCode.A);
-        this.key.skill|= Input.GetKey(KeyCode.S);
+        this.key.skill_ON |= Input.GetKeyDown(KeyCode.S);
+        this.key.skill_OFF |= Input.GetKeyUp(KeyCode.S);
         this.key.skill_change_right |= Input.GetKeyDown(KeyCode.D);
 
     }
+
+    public SkeletonAnimation Now = null;
+    public GameObject Front = null;
+    public GameObject Left = null;
+    public GameObject Right = null;
+    public GameObject Back = null;
+    private string cur_Animation = "";              // 현재 실행중인 애니메이션
 
     private void Move_Control()                     //실제로 Player 를 이동시키는 method 입니다.
     {
         Vector3 move_vector = Vector3.zero;         // 플레이어 이동용 Vector
         Vector3 position = this.transform.position; // 현재 위치를 보관하는 Vector
-        
+
         // ↑,↓,→,←키가 눌리면
-        if (this.key.up) 
+        if (this.key.up)
         {
             move_vector += Vector3.forward;         // move_vector(이동용 Vector)를 위쪽으로 변경
+            
         }
-        if (this.key.down)
+        else if (this.key.down)
         {
             move_vector += Vector3.back;
         }
-        if (this.key.right)                         
+
+        if (this.key.right)
         {
             move_vector += Vector3.right;
         }
-        if (this.key.left)
+        else if (this.key.left)
         {
             move_vector += Vector3.left;
+        }
+
+        if (move_vector.x > 0.0f) // 오른
+        {
+            Front.SetActive(false);
+            Left.SetActive(false);
+            Right.SetActive(true);
+            Back.SetActive(false);
+
+            Now = Right.GetComponent<SkeletonAnimation>();
+            Spine_SetAnimation("run", true, 1.0f);
+        }
+        else if(move_vector.x<0.0f) // 왼
+        {
+            Front.SetActive(false);
+            Left.SetActive(true);
+            Right.SetActive(false);
+            Back.SetActive(false);
+            Now = Left.GetComponent<SkeletonAnimation>();
+            Spine_SetAnimation("run", true, 1.0f);
+        }
+        else
+        {
+            if (move_vector.z > 0.0f) // 위
+            {
+                Front.SetActive(false);
+                Left.SetActive(false);
+                Right.SetActive(false);
+                Back.SetActive(true);
+
+                Now = Back.GetComponent<SkeletonAnimation>();
+                Spine_SetAnimation("run", true, 1.0f);
+            }
+            else //아래
+            {
+
+                Front.SetActive(true);
+                Left.SetActive(false);
+                Right.SetActive(false);
+                Back.SetActive(false);
+
+                Now = Front.GetComponent<SkeletonAnimation>();
+                Spine_SetAnimation("run", true, 1.0f);
+            }
         }
 
         move_vector.Normalize();                    // Vector 길이를 1로 정규화
@@ -106,25 +163,31 @@ public class Player : MonoBehaviour {
         position += move_vector;                    // 플레이어 위치를 이동                       
         position.y = 0.0f;                          // 플레이어 높이를 0으로 한다
         
-        // 맵 범위를 벗어나면?
-        if (position.magnitude > MOVE_AREA_RADIUS)   
-        {
-            position.Normalize();
-            position *= MOVE_AREA_RADIUS;           // 범위 끝에서 머물도록 함
-        }
+        
 
         position.y = this.transform.position.y;     // 새로 구한 위치의 높이를 현재 높이로
         this.transform.position = position;         // 새로 구한 위치를 현재 위치로
-        
+
         // 이동을 했다면?
-        if (move_vector.magnitude > 0.01f)         
+        if (move_vector.magnitude > 0.01f)
         {// 캐릭터의 방향을 바꾼다.
             Quaternion q = Quaternion.LookRotation(move_vector, Vector3.up);
-            this.transform.rotation = Quaternion.Lerp(this.transform.rotation, q, 0.1f);
+            this.transform.rotation = q;            // Lerp 빼버렸다.
         }
 
     }
-
+    private void Spine_SetAnimation(string name, bool loop, float speed)
+    {
+        if (name == cur_Animation)
+        {
+            return;
+        }
+        else
+        {
+            Now.state.SetAnimation(0, name, loop).timeScale = speed;
+            cur_Animation = name;
+        }
+    }
     // ----------------------- 수집 관련 부분 ------------------------------
 
     private GameObject closest_item = null;         // 플레이어의 정면에 있는 게임 오브젝트
@@ -148,7 +211,7 @@ public class Player : MonoBehaviour {
                     break;
                 }
 
-                                                                                            // 주목중인 아이템이 있다면?
+                // 주목중인 아이템이 있다면?
                 this.carried_item = this.closest_item;                                      // 주목중인 아이템을 들어올림
                 this.carried_item.transform.parent = this.transform;                        // 들어 올린 아이템을 Player 자식으로 설정
                 this.carried_item.transform.localPosition = Vector3.up * 2.0f;              // 머리 위로 이동
@@ -156,7 +219,7 @@ public class Player : MonoBehaviour {
             }
             else
             {
-                                                                                            // 들고 있는 아이템이 있으면?
+                // 들고 있는 아이템이 있으면?
                 this.carried_item.transform.localPosition = Vector3.forward * 1.0f;         // 들고 있는 아이템을 앞으로 이동시킴
                 this.carried_item.transform.parent = null;                                  // 자식 설정을 해제함
                 this.carried_item = null;                                                   // 들고 있는 아이템 삭제
@@ -169,9 +232,9 @@ public class Player : MonoBehaviour {
         do
         {
             Vector3 heading = this.transform.TransformDirection(Vector3.forward);
-                                                            // 자신이 현재 향하고 있는 방향
+            // 자신이 현재 향하고 있는 방향
             Vector3 to_other = other.transform.position - this.transform.position;
-                                                            // 자신 쪽에서 본 아이템의 방향
+            // 자신 쪽에서 본 아이템의 방향
 
             heading.y = 0.0f;                               // Player 의 Item 의 높이를 같은 선상으로 한 후
             heading.Normalize();                            // Player 의 방향벡터의 길이를 1로 정규화 시킵니다.
@@ -184,7 +247,7 @@ public class Player : MonoBehaviour {
                 break;
             }
             ret = true;                                     // 내적이 45도 cosine 값 이상이면 정면에 있다고 판정합니다.
-        } while(false);
+        } while (false);
         return ret;
 
         /*
@@ -204,6 +267,21 @@ public class Player : MonoBehaviour {
          * 내적이 여기서 나오네
          */
     }
+    private bool Is_Carried_Food()                       // 들고 있는 물건이 먹을것인지 판별하는 method입니다.
+    {
+        if (this.carried_item != null)
+        {
+            Item.TYPE carried_item_type = this.item_root.GetItemType(this.carried_item);
+
+            switch (carried_item_type)              // 가지고 있는 아이템을 판별합니다.
+            {
+                case Item.TYPE.APPLE:               // 사과라면
+                case Item.TYPE.PLANT:               // 혹은 식물이라면
+                    return true;
+            }
+        }
+        return false;
+    }
 
     // 주목한다는 것은 Player가 떨어져 있는 Item을 보고 있음을 의미합니다.
     void OnTriggerStay(Collider other)              // Trigger에 걸린 GameObject를 주목합니다.
@@ -211,7 +289,7 @@ public class Player : MonoBehaviour {
         GameObject other_go = other.gameObject;
 
         // Trigger의 GameObject Layer 설정이 Item이면~
-        if(other_go.layer == LayerMask.NameToLayer("Item"))
+        if (other_go.layer == LayerMask.NameToLayer("Item"))
         {
             if (this.closest_item == null)                  // 아무것도 주목하고 있지 않다면?
             {
@@ -231,18 +309,30 @@ public class Player : MonoBehaviour {
     }
     void OnTriggerExit(Collider other)              // 주목을 그만둡니다.
     {
-        if(this.closest_item == other.gameObject)
+        if (this.closest_item == other.gameObject)
         {
             this.closest_item = null;
         }
     }
+
+    // 워프를 타보자
+    public Transform warpTarget = null;
+    void OnTriggerEnter(Collider col)
+    {
+        if (col.gameObject.tag == "Warp")
+        {
+            warpTarget = col.transform.GetChild(0).transform;
+            this.transform.position = warpTarget.position;
+        }
+    }
+
 
     // ----------------------- 스킬 사용 부분 ------------------------------
     private GameObject carried_skill = null;
     private SkillRoot skill_root = null;
     private int Skill_Pointer = 0;
 
-    private void Skill_Use_Control()             // 물건을 줍거나 떨어뜨리기 위한 method 입니다.
+    private void Skill_Use_Control()             // 스킬 사용하는 method 입니다.
     {
         switch (this.carried_skill.tag)
         {
@@ -257,6 +347,23 @@ public class Player : MonoBehaviour {
                 break;
         }
     }
+
+    private void Skill_Reset_Control()             // 스킬을 취소하는 method 입니다.
+    {
+        switch (this.carried_skill.tag)
+        {
+            case "Owl":
+                this.skill_root.resetOwl();
+                break;
+            case "Alpaca":
+                this.skill_root.resetAlpaca();
+                break;
+            case "Turtle":
+                this.skill_root.resetTurtle();
+                break;
+        }
+    }
+
     private void Skill_Change_Control()
     {
         if (this.key.skill_change_left)
@@ -320,10 +427,11 @@ public class Player : MonoBehaviour {
     }
 
 
-    void Start () {
+    void Start()
+    {
         // 이동, 수리, 식사 등 상태에 관한 초기화입니다
         this.step = STEP.NONE;                      // 현재 상태 초기화
-        this.next_step = STEP.MOVE;                 // 다음 상태 초기화
+        this.next_step = STEP.NONE;                 // 다음 상태 초기화
 
         // 수집 행동을 위해 ItemRoot 스크립트를 가져옵니다.
         this.item_root = GameObject.Find("GameRoot").GetComponent<ItemRoot>();
@@ -333,58 +441,63 @@ public class Player : MonoBehaviour {
         this.carried_skill = skill_root.Skill_list[0];    // 스킬 설정
     }
 
-    void Update () {
+    void Update()
+    {
         this.Get_Input();                           // 키 입력정보 취득
         this.step_timer += Time.deltaTime;
         float eat_time = 2.0f;
 
         // 상태를 변화시키는 처리
-        if (this.next_step == STEP.NONE)            // 다음 예정이 없다면?
+        // 시작시 step = NONE, next_step = NONE
+        switch (this.step)                      // 현재 상태가...
         {
-            switch (this.step)                      // 현재 상태가...
-            {
-                case STEP.MOVE:                     // 이동중일 때
-                    // 식사상태 판별
-                    do
+            case STEP.NONE:
+                if (this.key.up || this.key.down || this.key.left || this.key.right)
+                {
+                    this.next_step = STEP.MOVE;
+                }
+                break;
+            case STEP.MOVE:                     // 이동중일 때
+                do
+                {
+                    if (!this.key.action)       // 액션(X)키가 눌려 있지 않다 -> 루프 탈출
                     {
-                        if (!this.key.action)       // 액션(X)키가 눌려 있지 않다 -> 루프 탈출
+                        if (!this.key.up && !this.key.down && !this.key.left && !this.key.right)
                         {
-                            break;
+                            this.next_step = STEP.NONE;
                         }
-
-                        if (this.carried_item != null)              // 액션(X)키가 눌려 있다면?
-                        {
-                            Item.TYPE carried_item_type = this.item_root.GetItemType(this.carried_item);
-
-                            switch (carried_item_type)              // 가지고 있는 아이템을 판별합니다.
-                            {
-                                case Item.TYPE.APPLE:               // 사과라면
-                                case Item.TYPE.PLANT:               // 혹은 식물이라면
-                                    this.next_step = STEP.EATING;   // 상태를 '식사'로 바꿉니다.
-                                    break;
-                            }
-                        }
-                    } while (false);
-                    break;
-                case STEP.EATING:
-                    if(this.step_timer > eat_time)
-                    {
-                        this.next_step = STEP.MOVE;
+                        break;  // 탈출
                     }
-                    break;
-            }
+
+                    if (Is_Carried_Food())
+                    {
+                        this.next_step = STEP.EATING;   // 상태를 '식사'로 바꿉니다.
+                        break; // 탈출
+                    }
+                    
+                } while (false);
+                break;
+            case STEP.EATING:
+                if (this.step_timer > eat_time)         // 아래서 상태 변할때 step_timer를 0으로 만들어 2초간 돌게된다.
+                {
+                    this.next_step = STEP.NONE;
+                }
+                break;
         }
 
         // 상태가 변화할 때의 처리
-        while (this.next_step != STEP.NONE){
+        if (this.step != this.next_step)
+        {
             this.step = this.next_step;
-            this.next_step = STEP.NONE;
+
             switch (this.step)
             {
+                case STEP.NONE:                     // '대기' 상태 처리
+                    break;
                 case STEP.MOVE:                     // '이동' 상태 처리
                     break;
                 case STEP.EATING:                   // '식사' 상태 처리
-                    if(this.carried_item != null)
+                    if (this.carried_item != null)
                     {
                         GameObject.Destroy(this.carried_item);  // 먹은 아이템을 없앱니다.
                     }
@@ -393,12 +506,17 @@ public class Player : MonoBehaviour {
             this.step_timer = 0.0f;
         }
 
-        // 각 상황(MOVE, REPAIRING, EATING)에서 반복행동
+        // 상태 유지시 처리
         switch (this.step)
         {
-            case STEP.MOVE:
+            case STEP.NONE:                     // '대기' 상태 처리
+                this.Pick_Or_Drop_Control();
+                Spine_SetAnimation("idle", true, 1.0f);
+                break;
+            case STEP.MOVE:                     // '이동' 상태 처리
                 this.Move_Control();                // 이동 조작
                 this.Pick_Or_Drop_Control();        // 수집 조작
+                Spine_SetAnimation("run", true, 1.0f);
                 break;
         }
 
@@ -412,12 +530,17 @@ public class Player : MonoBehaviour {
                 break;
             }
 
-            if (this.key.skill)              // 스킬을 가지고 있다면?
+            if (this.key.skill_ON)              // 스킬을 가지고 있다면?
             {
                 Skill_Use_Control();
+            }
+
+            if (this.key.skill_OFF)
+            {
+                Skill_Reset_Control();
             }
         } while (false);
 
     }
-    
+
 }
