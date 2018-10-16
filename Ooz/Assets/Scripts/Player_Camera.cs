@@ -6,8 +6,8 @@ public class Player_Camera : MonoBehaviour
 {
     
     public Transform Target;                    // 추적할 대상 (Player)
-    public float distance = 7.0f;               // Camera와의 거리
-    public float height = 7.0f;                 // Camera의 높이
+    public float distance = 5.0f;               // Camera와의 거리
+    public float height = 9.0f;                 // Camera의 높이
     public float followSpeed = 5.0f;
 
     private Transform tr;

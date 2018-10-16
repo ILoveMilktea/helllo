@@ -30,15 +30,6 @@ public class ItemRoot : MonoBehaviour
     private float respawn_timer_plant = 0.0f;           // Plant 출현 시간
 
     // respawn 위치를 조정하는 method 들입니다.
-    public void RespawnIron()
-    {
-        GameObject go = GameObject.Instantiate(this.IronPrefab) as GameObject;          // Iron Respawn 위치 생성
-        Vector3 pos = GameObject.Find("IronRespawn").transform.position;                // 출현지점을 가져와서
-        pos.y = 1.0f;
-        pos.x += Random.Range(-1.0f, 1.0f);
-        pos.z += Random.Range(-1.0f, 1.0f);                                             // 약간 랜덤하게 바꾼 다음에
-        go.transform.position = pos;                                                    // 바뀐 위치를 알려줍니다.
-    }
     public void RespawnApple()
     {
         GameObject go = GameObject.Instantiate(this.ApplePrefab) as GameObject;         // Apple Respawn 위치 생성
@@ -47,6 +38,18 @@ public class ItemRoot : MonoBehaviour
         pos.x += Random.Range(-1.0f, 1.0f);
         pos.z += Random.Range(-1.0f, 1.0f);                                             // 약간 랜덤하게 바꾼 다음에
         go.transform.position = pos;                                                    // 바뀐 위치를 알려줍니다.
+    }
+
+    public void RespawnIron()
+    {
+        GameObject go = GameObject.Instantiate(this.IronPrefab) as GameObject;          // Iron Respawn 위치 생성
+        Vector3 pos = GameObject.Find("IronRespawn").transform.position;                // 출현지점을 가져와서
+        pos.y = 1.0f;
+        pos.x += Random.Range(-1.0f, 1.0f);
+        pos.z += Random.Range(-1.0f, 1.0f);                                             // 약간 랜덤하게 바꾼 다음에
+        go.transform.position = pos;                                                    // 바뀐 위치를 알려줍니다.
+
+
     }
     public void RespawnPlant()
     {

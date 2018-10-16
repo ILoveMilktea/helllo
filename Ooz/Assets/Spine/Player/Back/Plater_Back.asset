@@ -9,7 +9,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f1b3b4b945939a54ea0b23d3396115fb, type: 3}
-  m_Name: Player_Back
+  m_Name: Plater_Back
   m_EditorClassIdentifier: 
   atlasAssets:
   - {fileID: 11400000, guid: 469c96cda2cf45d4d93e5867b36b95ee, type: 2}
@@ -19,4 +19,4 @@ MonoBehaviour:
   toAnimation: []
   duration: []
   defaultMix: 0
-  controller: {fileID: 0}
+  controller: {fileID: 9100000, guid: 2d0fbe143a8cf1f44aef5158297923df, type: 2}

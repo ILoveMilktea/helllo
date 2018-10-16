@@ -15,8 +15,11 @@ public class Player : MonoBehaviour
         public bool down;
         public bool right;
         public bool left;
+
         public bool pick;                           // 줍는다/버린다 Z키
         public bool action;                         // 먹는다/수리한다 X키
+        public bool lit_Fire;                        // 불피우기 Spacebar
+
         public bool skill_change_left;              // 스킬교체 A키
         public bool skill_ON;                       // 스킬사용 S키
         public bool skill_OFF;                      // 스킬사용 S키 해제
@@ -44,12 +47,16 @@ public class Player : MonoBehaviour
         this.key.down = false;
         this.key.right = false;
         this.key.left = false;
+
         this.key.pick = false;
         this.key.action = false;
+        this.key.lit_Fire = false;
+
         this.key.skill_change_left = false;
         this.key.skill_ON = false;
         this.key.skill_OFF = false;
         this.key.skill_change_right = false;
+        
 
         // |= 연산은 A |= B; 라면 A = A|B; 의 역할을 합니다.
         // A, B 둘 다 false일 때만 false를 반환합니다.
@@ -74,11 +81,16 @@ public class Player : MonoBehaviour
         this.key.pick |= Input.GetKeyDown(KeyCode.Z);
         // X키가 눌리면 true 대입 (먹는다/수리한다)
         this.key.action |= Input.GetKeyDown(KeyCode.X);
+        // Spacebar키가 눌리면 true 대입, 횃불을 지핀다.
+        this.key.lit_Fire |= Input.GetKeyDown(KeyCode.Space);
+
         // S키가 눌리면 true 대입 (스킬사용), A,D로 스킬 교체
         this.key.skill_change_left |= Input.GetKeyDown(KeyCode.A);
         this.key.skill_ON |= Input.GetKeyDown(KeyCode.S);
         this.key.skill_OFF |= Input.GetKeyUp(KeyCode.S);
         this.key.skill_change_right |= Input.GetKeyDown(KeyCode.D);
+
+
 
     }
 
@@ -95,46 +107,61 @@ public class Player : MonoBehaviour
         Vector3 position = this.transform.position; // 현재 위치를 보관하는 Vector
 
         // ↑,↓,→,←키가 눌리면
-        if (this.key.up)
+        do
         {
-            move_vector += Vector3.forward;         // move_vector(이동용 Vector)를 위쪽으로 변경
-            
-        }
-        else if (this.key.down)
-        {
-            move_vector += Vector3.back;
-        }
+            if (this.key.up)
+            {
+                move_vector += Vector3.forward;         // move_vector(이동용 Vector)를 위쪽으로 변경
+                break;
+            }
 
-        if (this.key.right)
-        {
-            move_vector += Vector3.right;
-        }
-        else if (this.key.left)
-        {
-            move_vector += Vector3.left;
-        }
+            if (this.key.down)
+            {
+                move_vector += Vector3.back;
+            }
+        } while (false);
 
-        if (move_vector.x > 0.0f) // 오른
+        do
         {
-            Front.SetActive(false);
-            Left.SetActive(false);
-            Right.SetActive(true);
-            Back.SetActive(false);
+            if (this.key.right)
+            {
+                move_vector += Vector3.right;
+                break;
+            }
 
-            Now = Right.GetComponent<SkeletonAnimation>();
-            Spine_SetAnimation("run", true, 1.0f);
-        }
-        else if(move_vector.x<0.0f) // 왼
+            if (this.key.left)
+            {
+                move_vector += Vector3.left;
+            }
+        } while (false);
+
+        do
         {
-            Front.SetActive(false);
-            Left.SetActive(true);
-            Right.SetActive(false);
-            Back.SetActive(false);
-            Now = Left.GetComponent<SkeletonAnimation>();
-            Spine_SetAnimation("run", true, 1.0f);
-        }
-        else
-        {
+
+            if (move_vector.x > 0.0f) // 오른
+            {
+                Front.SetActive(false);
+                Left.SetActive(false);
+                Right.SetActive(true);
+                Back.SetActive(false);
+
+                Now = Right.GetComponent<SkeletonAnimation>();
+                Spine_SetAnimation("run", true, 1.0f);
+                break;
+            }
+
+            if (move_vector.x < 0.0f) // 왼
+            {
+                Front.SetActive(false);
+                Left.SetActive(true);
+                Right.SetActive(false);
+                Back.SetActive(false);
+
+                Now = Left.GetComponent<SkeletonAnimation>();
+                Spine_SetAnimation("run", true, 1.0f);
+                break;
+            }
+
             if (move_vector.z > 0.0f) // 위
             {
                 Front.SetActive(false);
@@ -144,8 +171,10 @@ public class Player : MonoBehaviour
 
                 Now = Back.GetComponent<SkeletonAnimation>();
                 Spine_SetAnimation("run", true, 1.0f);
+                break;
             }
-            else //아래
+
+            if (move_vector.z <= 0.0f) //아래
             {
 
                 Front.SetActive(true);
@@ -155,15 +184,17 @@ public class Player : MonoBehaviour
 
                 Now = Front.GetComponent<SkeletonAnimation>();
                 Spine_SetAnimation("run", true, 1.0f);
+                break;
             }
-        }
+        } while (false);
+
 
         move_vector.Normalize();                    // Vector 길이를 1로 정규화
         move_vector *= MOVE_SPEED * Time.deltaTime; // 거리 = 속도 x 시간
         position += move_vector;                    // 플레이어 위치를 이동                       
         position.y = 0.0f;                          // 플레이어 높이를 0으로 한다
-        
-        
+
+
 
         position.y = this.transform.position.y;     // 새로 구한 위치의 높이를 현재 높이로
         this.transform.position = position;         // 새로 구한 위치를 현재 위치로
@@ -427,6 +458,65 @@ public class Player : MonoBehaviour
     }
 
 
+
+    // ---------- 게임 플레이 -----------
+    public GameObject basic_light = null;
+    public GameObject torch_light = null;
+    public float go_dark = 0.1f;
+    public float go_bright = 0.1f;
+
+    // basic_light range = 8 ~ 12 
+    // torch_light range = 8 ~ 12
+
+    public float light_timer = 30.0f;
+
+    bool is_carried_Stick()
+    {
+        return true;
+    }
+
+    IEnumerator goDarkness()                            // 횃불 꺼짐.
+    {
+        Light tBasic = basic_light.GetComponent<Light>();
+        Light tTorch = torch_light.GetComponent<Light>();
+        float range_instance = tBasic.range + tTorch.range - 2.0f;
+
+        while (tBasic.range + tTorch.range > range_instance)           
+        {
+            if (tBasic.range + tTorch.range < 16.0f)     // 밝기 최소시 탈출
+                break;
+
+            tBasic.range -= go_dark;
+            tTorch.range -= go_dark;
+
+            yield return new WaitForSeconds(0.01f);
+        }
+        
+    }
+
+    IEnumerator litFire()                               // 횃불 지피기. 코루틴
+    {
+        Light tBasic = basic_light.GetComponent<Light>();
+        Light tTorch = torch_light.GetComponent<Light>();
+        float range_instance = tBasic.range + tTorch.range + 2.0f;
+
+        while (tBasic.range + tTorch.range < range_instance)            
+        {
+            if (tBasic.range + tTorch.range > 24.0f)    // 밝기 최대시 탈출
+                break;
+
+            if (is_carried_Stick())                                // Stick을 가지고 있다면
+            {
+                tBasic.range += go_bright;
+                tTorch.range += go_bright;
+
+            }
+            yield return new WaitForSeconds(0.01f);
+        }
+
+    }
+    
+
     void Start()
     {
         // 이동, 수리, 식사 등 상태에 관한 초기화입니다
@@ -441,6 +531,7 @@ public class Player : MonoBehaviour
         this.carried_skill = skill_root.Skill_list[0];    // 스킬 설정
     }
 
+    
     void Update()
     {
         this.Get_Input();                           // 키 입력정보 취득
@@ -455,6 +546,13 @@ public class Player : MonoBehaviour
                 if (this.key.up || this.key.down || this.key.left || this.key.right)
                 {
                     this.next_step = STEP.MOVE;
+                    break;
+                }
+
+                if (Is_Carried_Food())
+                {
+                    this.next_step = STEP.EATING;   // 상태를 '식사'로 바꿉니다.
+                    break; // 탈출
                 }
                 break;
             case STEP.MOVE:                     // 이동중일 때
@@ -474,7 +572,7 @@ public class Player : MonoBehaviour
                         this.next_step = STEP.EATING;   // 상태를 '식사'로 바꿉니다.
                         break; // 탈출
                     }
-                    
+
                 } while (false);
                 break;
             case STEP.EATING:
@@ -521,7 +619,9 @@ public class Player : MonoBehaviour
         }
 
 
-        // 스킬 조작
+        // 여러가지 키 입력시 조작
+        
+          //스킬 조작
         do
         {
             if (this.key.skill_change_left || this.key.skill_change_right)
@@ -539,7 +639,20 @@ public class Player : MonoBehaviour
             {
                 Skill_Reset_Control();
             }
-        } while (false);
+        } while (false); 
+
+          //횃불 조작
+        if (this.key.lit_Fire)              // 불 지피기
+        {
+            StartCoroutine("litFire");
+        }
+
+        this.light_timer -= Time.deltaTime;
+        if (this.light_timer <= 0.0f || Input.GetKeyDown(KeyCode.Alpha0))       // 불 끄기, 테스트용으로 0번을 끄는모드
+        {
+            StartCoroutine("goDarkness");
+            this.light_timer = 30.0f;       // 30초마다 시야 감소
+        }
 
     }
 

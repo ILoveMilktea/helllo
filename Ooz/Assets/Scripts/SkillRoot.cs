@@ -20,9 +20,7 @@ public class SkillRoot : MonoBehaviour {
     public GameObject TurtlePrefab = null;
     public List<GameObject> Skill_list;
 
-    public GameObject Owl_Light = null;
     public GameObject Owl_Light_Directional = null;
-    public GameObject Basic_Light = null;
     private Player_Camera Camera_Control = null;
     private Player Movespeed_Control = null;
 
@@ -36,12 +34,10 @@ public class SkillRoot : MonoBehaviour {
 
     public void UseOwl()
     {
-        Owl_Light.GetComponent<Light>().enabled = true;
         Owl_Light_Directional.GetComponent<Light>().enabled = true;
-        Basic_Light.GetComponent<Light>().enabled = false;
 
-        Camera_Control.distance = 12.0f;
-        Camera_Control.height = 12.0f;
+        Camera_Control.distance += 5.0f;
+        Camera_Control.height += 5.0f;
     }
     public void UseAlpaca()
     {
@@ -58,12 +54,10 @@ public class SkillRoot : MonoBehaviour {
 
     public void resetOwl()
     {
-        Owl_Light.GetComponent<Light>().enabled = false;
         Owl_Light_Directional.GetComponent<Light>().enabled = false;
-        Basic_Light.GetComponent<Light>().enabled = true;
 
-        Camera_Control.distance = 7.0f;
-        Camera_Control.height = 7.0f;
+        Camera_Control.distance -= 5.0f;
+        Camera_Control.height -= 5.0f;
     }
     public void resetAlpaca()
     {
